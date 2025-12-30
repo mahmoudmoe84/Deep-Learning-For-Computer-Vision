@@ -9,7 +9,18 @@ from torchvision.utils import make_grid
 from typing import List, Optional, Tuple
 
 
-def imshow(img: torch.Tensor, title: Optional[str] = None, denormalize: bool = True):
+# Default normalization constants for CIFAR-10
+CIFAR10_MEAN = (0.4914, 0.4822, 0.4465)
+CIFAR10_STD = (0.2023, 0.1994, 0.2010)
+
+
+def imshow(
+    img: torch.Tensor, 
+    title: Optional[str] = None, 
+    denormalize: bool = True,
+    mean: Tuple[float, float, float] = CIFAR10_MEAN,
+    std: Tuple[float, float, float] = CIFAR10_STD
+):
     """
     Display a single image tensor
     
@@ -17,12 +28,13 @@ def imshow(img: torch.Tensor, title: Optional[str] = None, denormalize: bool = T
         img: Image tensor (C, H, W)
         title: Optional title for the plot
         denormalize: Whether to denormalize the image
+        mean: Mean values for denormalization
+        std: Standard deviation values for denormalization
     """
     if denormalize:
-        # Denormalize for CIFAR-10
-        mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
-        std = torch.tensor([0.2023, 0.1994, 0.2010]).view(3, 1, 1)
-        img = img * std + mean
+        mean_tensor = torch.tensor(mean).view(3, 1, 1)
+        std_tensor = torch.tensor(std).view(3, 1, 1)
+        img = img * std_tensor + mean_tensor
     
     npimg = img.numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
@@ -37,7 +49,9 @@ def show_batch(
     labels: Optional[torch.Tensor] = None,
     class_names: Optional[List[str]] = None,
     nrow: int = 8,
-    denormalize: bool = True
+    denormalize: bool = True,
+    mean: Tuple[float, float, float] = CIFAR10_MEAN,
+    std: Tuple[float, float, float] = CIFAR10_STD
 ):
     """
     Display a batch of images in a grid
@@ -48,13 +62,15 @@ def show_batch(
         class_names: Optional list of class names
         nrow: Number of images per row
         denormalize: Whether to denormalize the images
+        mean: Mean values for denormalization
+        std: Standard deviation values for denormalization
     """
     grid = make_grid(images, nrow=nrow, padding=2, normalize=False)
     
     if denormalize:
-        mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
-        std = torch.tensor([0.2023, 0.1994, 0.2010]).view(3, 1, 1)
-        grid = grid * std + mean
+        mean_tensor = torch.tensor(mean).view(3, 1, 1)
+        std_tensor = torch.tensor(std).view(3, 1, 1)
+        grid = grid * std_tensor + mean_tensor
     
     npimg = grid.numpy()
     plt.figure(figsize=(15, 15))
@@ -119,7 +135,9 @@ def visualize_predictions(
     true_labels: torch.Tensor,
     pred_labels: torch.Tensor,
     class_names: List[str],
-    num_images: int = 10
+    num_images: int = 10,
+    mean: Tuple[float, float, float] = CIFAR10_MEAN,
+    std: Tuple[float, float, float] = CIFAR10_STD
 ):
     """
     Visualize model predictions with ground truth labels
@@ -130,17 +148,20 @@ def visualize_predictions(
         pred_labels: Predicted labels
         class_names: List of class names
         num_images: Number of images to display
+        mean: Mean values for denormalization
+        std: Standard deviation values for denormalization
     """
     num_images = min(num_images, len(images))
     fig, axes = plt.subplots(2, 5, figsize=(15, 6))
     axes = axes.ravel()
     
+    mean_tensor = torch.tensor(mean).view(3, 1, 1)
+    std_tensor = torch.tensor(std).view(3, 1, 1)
+    
     for i in range(num_images):
         img = images[i].cpu()
         # Denormalize
-        mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
-        std = torch.tensor([0.2023, 0.1994, 0.2010]).view(3, 1, 1)
-        img = img * std + mean
+        img = img * std_tensor + mean_tensor
         
         npimg = img.numpy().transpose(1, 2, 0)
         npimg = np.clip(npimg, 0, 1)
